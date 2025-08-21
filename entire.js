@@ -31,17 +31,19 @@ async function run(textInput, itemsQuery) {
   }
 
   async function generateDqlFromText(text, datasetId) {
-    const APP_ID = '68a6c5271e72fcf0cac19442'
+    const APP_ID = '68a6db9545c9445779972eb2'
     const jwt = getCookie('JWT')
     logDebug('JWT present?', !!jwt, jwt ? `prefix=${jwt.slice(0, 10)}..., len=${jwt.length}` : '')
-    if (!jwt) throw new Error('Missing JWT cookie')
+    const appHeaders = {}
+    if (jwt) appHeaders['authorization'] = `Bearer ${jwt}`
+    logDebug('App headers keys', Object.keys(appHeaders))
 
     const appUrl = `https://gate.dataloop.ai/api/v1/apps/${APP_ID}`
     logDebug('Fetching app descriptor', appUrl)
     const appResp = await fetch(appUrl, {
       method: 'GET',
       credentials: 'include',
-      headers: { 'authorization': `Bearer ${jwt}` }
+      headers: appHeaders
     })
     logDebug('App descriptor response status', appResp.status)
     if (!appResp.ok) {
@@ -67,7 +69,7 @@ async function run(textInput, itemsQuery) {
       method: 'GET',
       credentials: 'include',
       redirect: 'follow',
-      headers: { 'authorization': `Bearer ${jwt}` }
+      headers: appHeaders
     })
     logDebug('MCP route response status', routeResp.status, 'final URL', routeResp.url)
     if (!routeResp.ok) {

@@ -2,7 +2,7 @@
     "name": "AI DQL Agent",
     "displayName": "AI DQL Agent",
     "description": "AI DQL Agent",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "scope": "project",
     "components": {
         "panels": [
