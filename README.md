@@ -27,46 +27,19 @@ If the function returns no output, the app falls back to a minimal default query
 
 ### App installation:
 
-There are multiple ways to install the Semantic (CLIP) application:
+There are multiple ways to install the AI DQL Agent:
 
 1. **From the Market Place**:
     - Go to the MarketPlace
-    - Search for the Semantic (CLIP) application
+    - Search for the AI DQL Agent
     - Click on the application and click install button on the right hand side
 
-![market place clip installation image](assets/market_place_clip.png)
 
 2. **From the Dataset browser**:
     - Go to the dataset browser
     - Click on the `Add Filters` button.
-    - Find the `Semantic (CLIP)` application in the dropdown menu.
+    - Find the `AI DQL Agent` application in the dropdown menu.
     - Click on Install App button.
-
-![dataset clip installation image](assets/dataset_clip.png)
-
-### Preprocessing:
-
-CLIP Semantic search application comes with a preprocessing stage that generates embeddings for the images in the
-dataset.
-
-1. On App installation, a trigger is created that runs the preprocessing stage on every new item of supported mimetypes
-   created.
-2. For the existing items, you can run the preprocessing stage manually by following the steps below:
-    - Go to the dataset browser
-    - Click on `Dataset Actions`.
-    - Click on the `Deployment Slots` button from the dropdown menu.
-    - Click on the `Clip Extract Features` button.
-    - Wait for the execution to finish, you can track the status in the notification bell.
-
-![Running Clip preprocess manually](assets/clip_preprocess.png)
-
-### Supported Mimetypes:
-
-Currently, the application supports the following mimetypes:
-
-- image/jpeg
-- image/png
-- text/plain
 
 ### Searching
 
