@@ -53,5 +53,6 @@
         "modules": [],
         "services": [],
         "triggers": []
-    }
+    },
+    "trusted": true
 }
