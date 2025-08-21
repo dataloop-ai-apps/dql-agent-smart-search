@@ -33,7 +33,6 @@ async function run(textInput, itemsQuery) {
 
     async function generateDqlFromText(text, datasetId) {
         // Create an execution of a backend function that returns a DQL object for the prompt
-        // Adjust functionName/serviceName as needed for your deployment
         try {
             const execution = await dl.executions.create({
                 functionName: 'ask_dql_agent',
@@ -41,13 +40,46 @@ async function run(textInput, itemsQuery) {
                 input: { query: text, dataset_id: datasetId }
             })
 
-            if (execution && typeof execution.wait === 'function') {
-                await execution.wait()
-            }
+            const execId = execution && (execution.id || execution._id)
+            if (!execId) throw new Error('Missing execution id')
 
-            const output = execution && execution.output ? execution.output : {}
-            logDebug('Execution output keys', output ? Object.keys(output) : null)
-            return output.dql || (output.data && output.data.dql) || null
+            async function sleep(ms) { return new Promise(r => setTimeout(r, ms)) }
+            const jwt = getCookie('JWT')
+            const headers = jwt ? { authorization: `Bearer ${jwt}` } : {}
+            const gateBase = 'https://gate.dataloop.ai/api/v1'
+            const execUrl = `${gateBase}/executions/${execId}`
+            logDebug('Polling execution', execId, execUrl)
+
+            const successStatuses = new Set(['completed', 'success'])
+            const failureStatuses = new Set(['failed', 'error', 'aborted', 'stopped'])
+            const start = Date.now()
+            let lastStatus = execution.status
+            while (true) {
+                if (Date.now() - start > 120000) {
+                    throw new Error(`Execution timed out after 120s (last status: ${lastStatus || 'unknown'})`)
+                }
+                let resp, preview = ''
+                try {
+                    resp = await fetch(execUrl, { method: 'GET', credentials: 'include', headers })
+                    try { preview = (await resp.clone().text()).slice(0, 500) } catch (_) {}
+                    if (!resp.ok) throw new Error(`GET ${execUrl} -> ${resp.status} ${preview}`)
+                    const data = await resp.json()
+                    lastStatus = data && data.status
+                    logDebug('Execution status', lastStatus)
+                    if (lastStatus && successStatuses.has(lastStatus)) {
+                        const output = data && data.output ? data.output : {}
+                        logDebug('Execution output keys', output ? Object.keys(output) : null)
+                        return output.dql || (output.data && output.data.dql) || null
+                    }
+                    if (lastStatus && failureStatuses.has(lastStatus)) {
+                        throw new Error(`Execution failed with status: ${lastStatus}`)
+                    }
+                } catch (err) {
+                    logDebug('Poll error', err && err.message)
+                    // continue polling on transient errors within timeout
+                }
+                await sleep(1500)
+            }
         } catch (e) {
             logDebug('Execution error', e && e.message)
             throw e
