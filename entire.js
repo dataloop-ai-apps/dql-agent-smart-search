@@ -65,7 +65,7 @@ async function run(textInput, itemsQuery) {
                     if (!resp.ok) throw new Error(`GET ${execUrl} -> ${resp.status} ${preview}`)
                     const data = await resp.json()
                     lastStatus = data && data.latestStatus
-                    logDebug('Execution status', lastStatus)
+                    logDebug('Execution status', lastStatus.status)
                     if (lastStatus.status && successStatuses.has(lastStatus.status)) {
                         const output = lastStatus && lastStatus.output ? lastStatus.output : {}
                         logDebug('Execution output keys', output ? Object.keys(output) : null)
@@ -111,7 +111,8 @@ async function run(textInput, itemsQuery) {
             pageSize: 1000,
             resource: "items",
         };
-        if (mcpDql && mcpDql.join) {
+        if (mcpDql.join) {
+          console.log("mcpDql.join", mcpDql.join);
             query.join = mcpDql.join;
         }
         logDebug("Using execution output (filter/join)", query);
