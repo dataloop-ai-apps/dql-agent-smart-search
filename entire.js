@@ -86,24 +86,6 @@ async function run(textInput, itemsQuery) {
         }
     }
 
-    function mergeBaseConstraints(mcpDql, datasetId) {
-        const baseFilter = {
-            $and: [{ hidden: false }, { type: "file" }, { datasetId }],
-        };
-        const mergedFilter =
-            mcpDql && mcpDql.filter
-                ? { $and: [baseFilter, mcpDql.filter] }
-                : baseFilter;
-
-        return {
-            resource: "items",
-            page: 0,
-            pageSize: 1000,
-            ...(mcpDql || {}),
-            filter: mergedFilter,
-        };
-    }
-
     let mcpDql;
     try {
         mcpDql = await generateDqlFromText(textInput, dataset.id);
@@ -120,10 +102,17 @@ async function run(textInput, itemsQuery) {
         return default_query;
     }
 
-    // If the execution returned a full query, use it as-is without merging
+    // If execution returned output, return minimal items query with provided filter
     if (mcpDql) {
-        logDebug("Using execution output query (no merge)", mcpDql);
-        return mcpDql;
+        const filter = mcpDql && mcpDql.filter ? mcpDql.filter : mcpDql;
+        const query = {
+            filter,
+            page: 0,
+            pageSize: 1000,
+            resource: "items",
+        };
+        logDebug("Using execution output (filter only)", query);
+        return query;
     }
 
     // Fallback if no output was returned
