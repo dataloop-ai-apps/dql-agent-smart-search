@@ -38,7 +38,7 @@ async function run(textInput, itemsQuery) {
             const execution = await dl.executions.create({
                 functionName: 'ask_dql_agent',
                 serviceName: 'dataloop-mcp-dql-agent',
-                input: { prompt: text, datasetId }
+                input: { query: text, dataset_id: datasetId }
             })
 
             if (execution && typeof execution.wait === 'function') {
