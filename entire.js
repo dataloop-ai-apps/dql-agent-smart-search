@@ -32,77 +32,26 @@ async function run(textInput, itemsQuery) {
     }
 
     async function generateDqlFromText(text, datasetId) {
-        const APP_ID = "68a6c5271e72fcf0cac19442";
-        const jwt = getCookie("JWT");
-        logDebug("JWT present?", !!jwt, jwt ? `prefix=${jwt.slice(0, 10)}..., len=${jwt.length}` : "");
-        
-        const appHeaders = {};
-        if (jwt) appHeaders["authorization"] = `Bearer ${jwt}`;
-        logDebug("App headers keys", Object.keys(appHeaders));
-
-        // Step 1: Get app descriptor to get MCP route
-        const appUrl = `https://gate.dataloop.ai/api/v1/apps/${APP_ID}`;
-        logDebug("Fetching app descriptor", appUrl);
-        const appResp = await fetch(appUrl, {
-            method: "GET",
-            credentials: "include",
-            headers: appHeaders,
-        });
-        logDebug("App descriptor response status", appResp.status);
-        if (!appResp.ok) {
-            let bodyText = "";
-            try { bodyText = (await appResp.text()).slice(0, 500); } catch (_) {}
-            throw new Error(`Failed to get app descriptor (${appResp.status}). Body: ${bodyText}`);
-        }
-        
-        let appJson;
+        // Create an execution of a backend function that returns a DQL object for the prompt
+        // Adjust functionName/serviceName as needed for your deployment
         try {
-            appJson = await appResp.json();
-            logDebug("App JSON response", JSON.stringify(appJson, null, 2));
-        } catch (err) {
-            let raw = "";
-            try { raw = (await appResp.clone().text()).slice(0, 500); } catch (_) {}
-            logDebug("App JSON parse error", err && err.message, "raw preview", raw);
-            throw err;
-        }
-        
-        const appRoute = appJson && appJson.routes && appJson.routes.mcp;
-        logDebug("Resolved appRoute", appRoute, "routes keys", appJson && appJson.routes ? Object.keys(appJson.routes) : "no routes");
-        if (!appRoute) throw new Error("Missing MCP route");
+            const execution = await dl.executions.create({
+                functionName: 'ask_dql_agent',
+                serviceName: 'dataloop-mcp-dql-agent',
+                input: { prompt: text, datasetId }
+            })
 
-        // Use the MCP route directly (no need for JWT-APP cookie)
-        const serverUrl = appRoute;
-        logDebug("Using MCP serverUrl directly", serverUrl);
+            if (execution && typeof execution.wait === 'function') {
+                await execution.wait()
+            }
 
-        // Call the MCP tool directly
-        const toolUrl = `${serverUrl}/tools/ask_dql_agent`;
-        logDebug("Calling MCP tool", toolUrl, { promptLen: (text || "").length, datasetId });
-        
-        const toolResp = await fetch(toolUrl, {
-            method: "POST",
-            credentials: "include", // This will send JWT-APP cookie
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ prompt: text, datasetId }),
-        });
-        
-        let toolPreview = "";
-        try { toolPreview = (await toolResp.clone().text()).slice(0, 800); } catch (_) {}
-        logDebug("Tool response status", toolResp.status, "preview", toolPreview);
-        
-        if (!toolResp.ok) {
-            throw new Error(`MCP tool call failed (${toolResp.status}). Body: ${toolPreview}`);
+            const output = execution && execution.output ? execution.output : {}
+            logDebug('Execution output keys', output ? Object.keys(output) : null)
+            return output.dql || (output.data && output.data.dql) || null
+        } catch (e) {
+            logDebug('Execution error', e && e.message)
+            throw e
         }
-
-        let data;
-        try {
-            data = await toolResp.json();
-        } catch (err) {
-            logDebug("Tool JSON parse error", err && err.message, "raw preview", toolPreview);
-            throw err;
-        }
-        
-        logDebug("Tool JSON parsed, keys", data ? Object.keys(data) : null);
-        return data && data.dql ? data.dql : null;
     }
 
     function mergeBaseConstraints(mcpDql, datasetId) {
