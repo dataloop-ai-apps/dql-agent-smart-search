@@ -1,15 +1,27 @@
-# Semantic (CLIP)
+# Smart Search (MCP-powered DQL)
 
-The Semantic (CLIP) application is a text based search for images and text files in a dataset that uses the CLIP model.
+This application enables text-based search for items in a dataset by generating a DQL (Dataloop Query Language) filter from natural language input.
+The app now delegates query generation to a backend function and returns a production-ready DQL query object for the platform to execute.
 
-The application generates embeddings that are used to search based on similarity with the text queries.
+## How it works
 
-## Model Details
+- The UI script (`entire.js`) reads the user's prompt, creates an execution of a backend function (`ask_dql_agent` on service `dataloop-mcp-dql-agent`) and polls for completion via `GET /executions/<id>`.
+- When the execution completes successfully, the function returns a JSON payload with a `dql_query` field.
+- The app converts that to a final query structure and returns it to the platform.
 
-The CLIP model was developed by researchers at OpenAI to learn about what contributes to robustness in computer vision
-tasks. The model was also developed to test the ability of models to generalize to arbitrary image classification tasks
-in a zero-shot manner. It was not developed for general model deployment - to deploy models like CLIP, researchers will
-first need to carefully study their capabilities in relation to the specific context they’re being deployed within.
+Returned query shape when output exists:
+
+```json
+{
+  "filter": { /* copied from function output */ },
+  "page": 0,
+  "pageSize": 1000,
+  "resource": "items",
+  "join": { /* optional, copied from function output if present */ }
+}
+```
+
+If the function returns no output, the app falls back to a minimal default query: `{ filter: { $and: [{ hidden: false }, { type: 'file' }] } }`.
 
 ## Usage
 
@@ -56,20 +68,15 @@ Currently, the application supports the following mimetypes:
 - image/png
 - text/plain
 
-### Searching:
+### Searching
 
-Once the preprocessing is done, you can search for images using the search bar. The search bar supports text search.
+1. In the dataset browser, click `Add Filters` and add this app's search bar.
+2. Enter a natural language prompt and click Search.
+3. The backend function will generate a DQL filter (and `join` when relevant) and the app will return a final `items` query as above.
 
-You can install the Search bar by clicking on the `Add Filters` button in the dataset browser and
-selecting `Semantic (CLIP)`
-App.
-
-![clip search bar](assets/clip_search_bar.png)
-
-Once the search bar is installed, You can write any text you want and click `search`.
-
-The results of the search will be all the images and text files in the dataset sorted by the Euclidean distance between
-the query and the embeddings of the items in the dataset.
+Notes:
+- The app uses the browser cookie `JWT` to authorize polling the execution status.
+- Success statuses: `completed` or `success`. Failure statuses: `failed`, `error`, `aborted`, `stopped`.
 
 ## Contributions, Bugs and Issues - How to Contribute
 
