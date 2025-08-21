@@ -88,42 +88,25 @@ async function run(textInput, itemsQuery) {
         );
         if (!appRoute) throw new Error("Missing MCP route");
 
-        logDebug("Opening MCP route to establish JWT-APP", appRoute);
-        const routeResp = await fetch(appRoute, {
-            method: "GET",
-            credentials: "include",
-            redirect: "follow",
-            headers: appHeaders,
-        });
-        logDebug(
-            "MCP route response status",
-            routeResp.status,
-            "final URL",
-            routeResp.url
-        );
-        if (!routeResp.ok) {
-            let bodyText = "";
-            try {
-                bodyText = (await routeResp.text()).slice(0, 500);
-            } catch (_) {}
-            throw new Error(
-                `Failed to open MCP route (${routeResp.status}). Body: ${bodyText}`
-            );
-        }
-        const serverUrl = routeResp.url;
-        logDebug("Using MCP serverUrl", serverUrl);
+                          // Skip the MCP route establishment due to CORS issues
+         // Use the app's base URL pattern directly
+         const serverUrl = `https://dataloop-mcp-dql-agent-68a6c5271e72fcf0cac19442.apps.dataloop.ai`;
+         logDebug("Using MCP serverUrl (direct)", serverUrl);
 
         const toolUrl = `${serverUrl}/tools/ask_dql_agent`;
         logDebug("Calling MCP tool", toolUrl, {
             promptLen: (text || "").length,
             datasetId,
         });
-        const toolResp = await fetch(toolUrl, {
-            method: "POST",
-            credentials: "include",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ prompt: text, datasetId }),
-        });
+                 const toolResp = await fetch(toolUrl, {
+             method: "POST",
+             credentials: "include",
+             headers: { 
+                 "Content-Type": "application/json",
+                 ...appHeaders
+             },
+             body: JSON.stringify({ prompt: text, datasetId }),
+         });
         let toolPreview = "";
         try {
             toolPreview = (await toolResp.clone().text()).slice(0, 800);
