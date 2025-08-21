@@ -120,7 +120,13 @@ async function run(textInput, itemsQuery) {
         return default_query;
     }
 
-    const query = mergeBaseConstraints(mcpDql, dataset.id);
-    logDebug("Final merged query", query);
-    return query;
+    // If the execution returned a full query, use it as-is without merging
+    if (mcpDql) {
+        logDebug("Using execution output query (no merge)", mcpDql);
+        return mcpDql;
+    }
+
+    // Fallback if no output was returned
+    logDebug("No execution output. Returning default query");
+    return default_query;
 }
