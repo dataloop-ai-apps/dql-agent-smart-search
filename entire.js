@@ -32,38 +32,75 @@ async function run(textInput, itemsQuery) {
     }
 
     async function generateDqlFromText(text, datasetId) {
-        const APP_ID = "68a6db9545c9445779972eb2"; // Use the correct app ID from your headers
+        const APP_ID = "68a6db9545c9445779972eb2";
         const jwt = getCookie("JWT");
         logDebug("JWT present?", !!jwt, jwt ? `prefix=${jwt.slice(0, 10)}..., len=${jwt.length}` : "");
         
-        // Use the direct app URL pattern we saw in the redirect
-        const serverUrl = `https://dataloop-mcp-dql-agent-${APP_ID}.apps.dataloop.ai`;
-        logDebug("Using MCP serverUrl (direct)", serverUrl);
+        const appHeaders = {};
+        if (jwt) appHeaders["authorization"] = `Bearer ${jwt}`;
+        logDebug("App headers keys", Object.keys(appHeaders));
 
+        // Step 1: Get app descriptor to get MCP route
+        const appUrl = `https://gate.dataloop.ai/api/v1/apps/${APP_ID}`;
+        logDebug("Fetching app descriptor", appUrl);
+        const appResp = await fetch(appUrl, {
+            method: "GET",
+            credentials: "include",
+            headers: appHeaders,
+        });
+        logDebug("App descriptor response status", appResp.status);
+        if (!appResp.ok) {
+            let bodyText = "";
+            try { bodyText = (await appResp.text()).slice(0, 500); } catch (_) {}
+            throw new Error(`Failed to get app descriptor (${appResp.status}). Body: ${bodyText}`);
+        }
+        
+        let appJson;
+        try {
+            appJson = await appResp.json();
+            logDebug("App JSON response", JSON.stringify(appJson, null, 2));
+        } catch (err) {
+            let raw = "";
+            try { raw = (await appResp.clone().text()).slice(0, 500); } catch (_) {}
+            logDebug("App JSON parse error", err && err.message, "raw preview", raw);
+            throw err;
+        }
+        
+        const appRoute = appJson && appJson.routes && appJson.routes.mcp;
+        logDebug("Resolved appRoute", appRoute, "routes keys", appJson && appJson.routes ? Object.keys(appJson.routes) : "no routes");
+        if (!appRoute) throw new Error("Missing MCP route");
+
+        // Step 2: Hit MCP route to establish JWT-APP cookie
+        logDebug("Opening MCP route to establish JWT-APP", appRoute);
+        const routeResp = await fetch(appRoute, {
+            method: "GET",
+            credentials: "include",
+            redirect: "follow",
+            headers: appHeaders,
+        });
+        logDebug("MCP route response status", routeResp.status, "final URL", routeResp.url);
+        if (!routeResp.ok) {
+            let bodyText = "";
+            try { bodyText = (await routeResp.text()).slice(0, 500); } catch (_) {}
+            throw new Error(`Failed to open MCP route (${routeResp.status}). Body: ${bodyText}`);
+        }
+        
+        const serverUrl = routeResp.url;
+        logDebug("Using MCP serverUrl", serverUrl);
+
+        // Step 3: Call the MCP tool with JWT-APP cookie
         const toolUrl = `${serverUrl}/tools/ask_dql_agent`;
         logDebug("Calling MCP tool", toolUrl, { promptLen: (text || "").length, datasetId });
         
-        const headers = {
-            "Content-Type": "application/json"
-        };
-        
-        // Add JWT if available
-        if (jwt) {
-            headers["authorization"] = `Bearer ${jwt}`;
-        }
-        
         const toolResp = await fetch(toolUrl, {
             method: "POST",
-            credentials: "include", // This will send all cookies including JWT
-            headers: headers,
+            credentials: "include", // This will send JWT-APP cookie
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ prompt: text, datasetId }),
         });
         
         let toolPreview = "";
-        try {
-            toolPreview = (await toolResp.clone().text()).slice(0, 800);
-        } catch (_) {}
-        
+        try { toolPreview = (await toolResp.clone().text()).slice(0, 800); } catch (_) {}
         logDebug("Tool response status", toolResp.status, "preview", toolPreview);
         
         if (!toolResp.ok) {
