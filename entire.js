@@ -53,7 +53,7 @@ async function run(textInput, itemsQuery) {
             const successStatuses = new Set(['completed', 'success'])
             const failureStatuses = new Set(['failed', 'error', 'aborted', 'stopped'])
             const start = Date.now()
-            let lastStatus = execution.status
+            let lastStatus = execution.latestStatus
             while (true) {
                 if (Date.now() - start > 120000) {
                     throw new Error(`Execution timed out after 120s (last status: ${lastStatus || 'unknown'})`)
@@ -64,15 +64,15 @@ async function run(textInput, itemsQuery) {
                     try { preview = (await resp.clone().text()).slice(0, 500) } catch (_) {}
                     if (!resp.ok) throw new Error(`GET ${execUrl} -> ${resp.status} ${preview}`)
                     const data = await resp.json()
-                    lastStatus = data && data.status
+                    lastStatus = data && data.latestStatus
                     logDebug('Execution status', lastStatus)
-                    if (lastStatus && successStatuses.has(lastStatus)) {
-                        const output = data && data.output ? data.output : {}
+                    if (lastStatus.status && successStatuses.has(lastStatus.status)) {
+                        const output = lastStatus && lastStatus.output ? lastStatus.output : {}
                         logDebug('Execution output keys', output ? Object.keys(output) : null)
-                        return output.dql || (output.data && output.data.dql) || null
+                        return output.dql_query || null
                     }
-                    if (lastStatus && failureStatuses.has(lastStatus)) {
-                        throw new Error(`Execution failed with status: ${lastStatus}`)
+                    if (lastStatus.status && failureStatuses.has(lastStatus.status)) {
+                        throw new Error(`Execution failed with status: ${lastStatus.status}`)
                     }
                 } catch (err) {
                     logDebug('Poll error', err && err.message)
