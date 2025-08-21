@@ -1,0 +1,57 @@
+{
+    "name": "AI DQL Agent",
+    "displayName": "AI DQL Agent",
+    "description": "AI DQL Agent",
+    "version": "0.1.0",
+    "scope": "project",
+    "components": {
+        "panels": [
+            {
+                "name": "ai-dql-agent",
+                "supportedSlots": [
+                    {
+                        "type": "datasetBrowserSearch",
+                        "configuration": {
+                            "layout": {
+                                "schema": {
+                                    "fields": [
+                                        {
+                                            "name": "Text Box",
+                                            "title": "",
+                                            "props": {
+                                                "title": false,
+                                                "type": "string",
+                                                "placeholder": "Ask a question about the dataset"
+                                            },
+                                            "widget": "dl-input"
+                                        }
+                                    ]
+                                }
+                            },
+                            "invoke": {
+                                "type": "script",
+                                "namespace": "run",
+                                "source": "https://raw.githubusercontent.com/dataloop-ai-apps/dql-agent-smart-search/main/entire.js"
+                            }
+                        }
+                    }
+                ]
+            }
+        ],
+        "toolbars": [
+            {
+                "name": "ai-dql-agent",
+                "displayName": "AI DQL Agent",
+                "icon": "icon-dl-models-management",
+                "location": "datasetBrowserSearchOption",
+                "invoke": {
+                    "type": "panel",
+                    "namespace": "ai-dql-agent"
+                }
+            }
+        ],
+        "modules": [],
+        "services": [],
+        "triggers": []
+    }
+}
