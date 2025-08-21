@@ -102,7 +102,7 @@ async function run(textInput, itemsQuery) {
         return default_query;
     }
 
-    // If execution returned output, return minimal items query with provided filter
+    // If execution returned output, return minimal items query with provided filter and optional join
     if (mcpDql) {
         const filter = mcpDql && mcpDql.filter ? mcpDql.filter : mcpDql;
         const query = {
@@ -111,7 +111,10 @@ async function run(textInput, itemsQuery) {
             pageSize: 1000,
             resource: "items",
         };
-        logDebug("Using execution output (filter only)", query);
+        if (mcpDql && mcpDql.join) {
+            query.join = mcpDql.join;
+        }
+        logDebug("Using execution output (filter/join)", query);
         return query;
     }
 
