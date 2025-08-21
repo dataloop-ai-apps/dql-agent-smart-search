@@ -65,7 +65,7 @@ async function run(textInput, itemsQuery) {
                     if (!resp.ok) throw new Error(`GET ${execUrl} -> ${resp.status} ${preview}`)
                     const data = await resp.json()
                     lastStatus = data && data.latestStatus
-                    logDebug('Execution status', lastStatus.status)
+                    logDebug('Execution status', (lastStatus && lastStatus.status) || 'unknown')
                     if (lastStatus.status && successStatuses.has(lastStatus.status)) {
                         const output = lastStatus && lastStatus.output ? lastStatus.output : {}
                         logDebug('Execution output keys', output ? Object.keys(output) : null)
