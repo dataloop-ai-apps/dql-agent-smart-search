@@ -70,25 +70,11 @@ async function run(textInput, itemsQuery) {
         logDebug("Resolved appRoute", appRoute, "routes keys", appJson && appJson.routes ? Object.keys(appJson.routes) : "no routes");
         if (!appRoute) throw new Error("Missing MCP route");
 
-        // Step 2: Hit MCP route to establish JWT-APP cookie
-        logDebug("Opening MCP route to establish JWT-APP", appRoute);
-        const routeResp = await fetch(appRoute, {
-            method: "GET",
-            credentials: "include",
-            redirect: "follow",
-            headers: appHeaders,
-        });
-        logDebug("MCP route response status", routeResp.status, "final URL", routeResp.url);
-        if (!routeResp.ok) {
-            let bodyText = "";
-            try { bodyText = (await routeResp.text()).slice(0, 500); } catch (_) {}
-            throw new Error(`Failed to open MCP route (${routeResp.status}). Body: ${bodyText}`);
-        }
-        
-        const serverUrl = routeResp.url;
-        logDebug("Using MCP serverUrl", serverUrl);
+        // Use the MCP route directly (no need for JWT-APP cookie)
+        const serverUrl = appRoute;
+        logDebug("Using MCP serverUrl directly", serverUrl);
 
-        // Step 3: Call the MCP tool with JWT-APP cookie
+        // Call the MCP tool directly
         const toolUrl = `${serverUrl}/tools/ask_dql_agent`;
         logDebug("Calling MCP tool", toolUrl, { promptLen: (text || "").length, datasetId });
         
