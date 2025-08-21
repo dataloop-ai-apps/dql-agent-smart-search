@@ -1,0 +1,15 @@
+{
+  "name": "dql-agent-mcp-test",
+  "version": "1.0.0",
+  "description": "Test script for MCP DQL generation flow",
+  "main": "test_mcp_flow.js",
+  "scripts": {
+    "test": "node test_mcp_flow.js"
+  },
+  "dependencies": {
+    "node-fetch": "^2.6.7"
+  },
+  "keywords": ["dataloop", "mcp", "dql", "test"],
+  "author": "",
+  "license": "MIT"
+}

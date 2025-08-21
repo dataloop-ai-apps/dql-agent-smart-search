@@ -32,7 +32,7 @@ async function run(textInput, itemsQuery) {
     }
 
     async function generateDqlFromText(text, datasetId) {
-        const APP_ID = "68a6db9545c9445779972eb2";
+        const APP_ID = "68a6c5271e72fcf0cac19442";
         const jwt = getCookie("JWT");
         logDebug("JWT present?", !!jwt, jwt ? `prefix=${jwt.slice(0, 10)}..., len=${jwt.length}` : "");
         
